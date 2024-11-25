@@ -25,19 +25,23 @@ class DoctorsController extends Controller
      */
     public function index(Request $request)
     {
+         // Autoriza la acción según la política de permisos
         $this->authorize('viewAnyDoctor', Doctor::class);
+        // Captura el término de búsqueda ingresado
         $search = $request->search;
-
+        // Consulta usuarios que contienen el término de búsqueda en su nombre, apellido o email
         $users = User::where(DB::raw("CONCAT(users.name,' ',IFNULL(users.surname,''),' ',users.email)"), "like", "%" . $search . "%")
             // "name","like","%".$search."%"
             // ->orWhere("surname","like","%".$search."%")
             // ->orWhere("email","like","%".$search."%")
-            ->orderBy("id", "desc")
+             // Filtra solo los usuarios con el rol de "DOCTOR"
+            ->orderBy("id", "desc")// Ordena los resultados por ID de manera descendente
+             // Filtra solo los usuarios con el rol de "DOCTOR"
             ->whereHas("roles", function ($q) {
                 $q->where("name", "like", "%DOCTOR%");
             })
             ->get();
-
+        // Devuelve los usuarios encontrados en formato JSON
         return response()->json([
             "users" => UserCollection::make($users),
         ]);
@@ -46,15 +50,19 @@ class DoctorsController extends Controller
 
     public function profile($id)
     {
-
+        // Obtiene el usuario (doctor) por su ID
         $user = User::findOrFail($id);
+          // Calcula el número total de citas del doctor
         $num_appointment = Appointment::where("doctor_id", $id)->count();
+        // Calcula el monto total generado por las citas del doctor
         $money_of_appointments = Appointment::where("doctor_id", $id)->sum("amount");
+        // Calcula el número de citas pendientes
         $num_appointment_pendings = Appointment::where("doctor_id", $id)->where("status", 1)->count();
-
+        // Obtiene las citas pendientes
         $appointment_pendings = Appointment::where("doctor_id", $id)->where("status", 1)->get();
+        // Obtiene todas las citas del doctor
         $appointments = Appointment::where("doctor_id", $id)->get();
-
+        // Devuelve la información del doctor y sus citas en formato JSON
         return response()->json([
             "num_appointment" => $num_appointment,
             "money_of_appointments" => $money_of_appointments,
@@ -94,12 +102,13 @@ class DoctorsController extends Controller
 
     public function config()
     {
+         // Obtiene los roles de doctor
         $roles = Role::where("name", "like", "%DOCTOR%")->get();
-
+        // Obtiene las especialidades activas de los doctores
         $specialities = Specialitie::where("state", 1)->get();
-
+        // Crea un array para almacenar las horas de los horarios de los doctores
         $hours_days = collect([]);
-
+        // Organiza las horas por cada hora en un día
         $doctor_schedule_hours = DoctorScheduleHour::all();
         foreach ($doctor_schedule_hours->groupBy("hour") as $key => $schedule_hour) {
             $hours_days->push([
@@ -118,6 +127,7 @@ class DoctorsController extends Controller
                 }),
             ]);
         }
+         // Devuelve los roles, especialidades y horarios de los doctores en formato JSON
         return response()->json([
             "roles" => $roles,
             "specialities" => $specialities,
@@ -130,46 +140,49 @@ class DoctorsController extends Controller
      */
     public function store(Request $request)
     {
+        // Autoriza la creación de un nuevo doctor
         $this->authorize('createDoctor', Doctor::class);
+        // Decodifica los horarios del doctor desde el request
         $schedule_hours = json_decode($request->schedule_hours, 1);
-
+        // Verifica si el correo electrónico ya está registrado
         $users_is_valid = User::where("email", $request->email)->first();
-
+         // Si ya existe, retorna un mensaje de error
         if ($users_is_valid) {
             return response()->json([
                 "message" => 403,
                 "message_text" => "El CORREO INGRESADO YA ESTÁ REGISTRADO. INTENTA CON UNO DIFERENTE"
             ]);
         }
-
+         // Si el request tiene una imagen, la almacena en el almacenamiento
         if ($request->hasFile("imagen")) {
             $path = Storage::putFile("staffs", $request->file("imagen"));
             $request->request->add(["avatar" => $path]);
         }
-
+        // Si el request tiene una contraseña, la encripta
         if ($request->password) {
             $request->request->add(["password" => bcrypt($request->password)]);
         }
         // "Fri Oct 08 1993 00:00:00 GMT-0500 (hora estándar de Perú)"
         // Eliminar la parte de la zona horaria (GMT-0500 y entre paréntesis)
+         // Limpia la fecha de nacimiento del doctor (eliminando la zona horaria)
         $date_clean = preg_replace('/\(.*\)|[A-Z]{3}-\d{4}/', '', $request->birth_date);
-
+         // Convierte la fecha de nacimiento a un formato adecuado
         $request->request->add(["birth_date" => Carbon::parse($date_clean)->format("Y-m-d h:i:s")]);
-
+         // Crea un nuevo usuario en la base de datos
         $user = User::create($request->all());
-
+         // Asigna el rol de doctor al nuevo usuario
         $role = Role::findOrFail($request->role_id);
         $user->assignRole($role);
 
-        // ALMACENAR LA DISPONIBILIDAD DE HORARIO DEL DOCTOR
-
+        
+         // Almacena la disponibilidad de horarios del doctor
         foreach ($schedule_hours as $key => $schedule_hour) {
             if (sizeof($schedule_hour["children"]) > 0) {
                 $schedule_day = DoctorScheduleDay::create([
                     "user_id" => $user->id,
                     "day" => $schedule_hour["day_name"],
                 ]);
-
+                // Guarda las horas correspondientes a ese día
                 foreach ($schedule_hour["children"] as $children) {
                     DoctorScheduleJoinHour::create([
                         "doctor_schedule_day_id" => $schedule_day->id,
@@ -201,6 +214,7 @@ class DoctorsController extends Controller
      */
     public function update(Request $request, string $id)
     {
+        // Autoriza la actualización del doctor
         $this->authorize('updateDoctor', Doctor::class);
         $schedule_hours = json_decode($request->schedule_hours, 1);
 

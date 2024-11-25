@@ -12,10 +12,14 @@ import { DataService } from 'src/app/shared/data/data.service';
   styleUrls: ['./calendar.component.scss'],
 })
 export class CalendarComponent {
-  public routes = routes;
+  public routes = routes;// Establece las rutas para la navegación
+  // Propiedad para las opciones del calendario (FullCalendar)
+  // Se usa 'any' porque los datos pueden tener diferentes tipos en FullCalenda
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   options: any;
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    // Array para almacenar los eventos a mostrar en el calendario
+  // Se usa 'any[]' porque los datos de eventos pueden variar
   events: any[] = [];
 
   constructor(private data: DataService) {
@@ -24,21 +28,22 @@ export class CalendarComponent {
       this.events = events;
       this.options = { ...this.options, ...{ events: events.data } };
     });
+    // Configura las opciones iniciales del calendario
     this.options = {
       plugins: [dayGridPlugin, timeGridPlugin, interactionPlugin],
-      initialDate: new Date(),
+      initialDate: new Date(),// La fecha inicial será la fecha actual
       headerToolbar: {
         left: 'prev,next today',
         center: 'title',
         right: 'dayGridMonth,timeGridWeek,timeGridDay',
       },
-      initialView: 'dayGridMonth',
-      editable: true,
-      selectable: true,
-      selectMirror: true,
-      dayMaxEvents: true,
+      initialView: 'dayGridMonth',// Vista inicial del calendario será de mes
+      editable: true,// Permite editar eventos en el calendario
+      selectable: true,// Permite seleccionar rangos de fechas
+      selectMirror: true,// Espejo de selección (cuando se selecciona un rango, se muestra un espejo)
+      dayMaxEvents: true, // Limita el número de eventos visibles en un día
       events: [
-        { title: 'Meeting', start: new Date() }
+        { title: 'Meeting', start: new Date() }// Evento predeterminado (por defecto, una reunión con la fecha actual)
       ]
     };
   }

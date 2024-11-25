@@ -7,15 +7,14 @@ import { PatientMService } from '../service/patient-m.service';
   styleUrls: ['./add-patient-m.component.scss']
 })
 export class AddPatientMComponent {
+  // Propiedades del formulario para capturar los datos del paciente y otros relacionados.
   public selectedValue !: string ;
   public name:string = '';
   public surname:string = '';
   public mobile:string = '';
   public email:string = '';
- 
-  
   public birth_date:string = '';
-  public gender:number = 1;
+  public gender:number = 1;// Valor por defecto: 1 (masculino o femenino según la lógica).
   public education:string = '';
   public address:string = '';
   
@@ -23,18 +22,19 @@ export class AddPatientMComponent {
   public antecedent_personal:string = '';
   public antecedent_allergic:string = '';
 
+// Información del acompañante.
   public name_companion:string = '';
   public surname_companion:string = '';
   public mobile_companion:string = '';
   public relationship_companion:string = '';
-
+  // Información del responsable.
   public name_responsible:string = '';
   public surname_responsible:string = '';
   public mobile_responsible:string = '';
   public relationship_responsible:string = '';
 
-  public current_disease:string = '';
-  
+  public current_disease:string = '';// Enfermedad actual.
+   // Signos vitales.
   public ta:number = 0;
   public temperature:number = 0;
   public fc:number = 0;
@@ -43,11 +43,11 @@ export class AddPatientMComponent {
   
   public n_document:any = null;
 
-  public roles:any = [];
-  
-  public FILE_AVATAR:any;
-  public IMAGEN_PREVIZUALIZA:any = 'assets/img/user-06.jpg';
+  public roles:any = [];// Roles disponibles (si aplica en la lógica del servicio)
 
+  public FILE_AVATAR:any;
+  public IMAGEN_PREVIZUALIZA:any = 'assets/img/user-06.jpg';  //Imagen predeterminada o de previsualización.
+ // Mensajes de texto para validaciones y éxito.
   public text_success:string = '';
   public text_validation:string = '';
   constructor(
@@ -65,7 +65,9 @@ export class AddPatientMComponent {
   }
 
   save(){
+    // Método para guardar los datos del paciente.
     this.text_validation = '';
+    // Validaciones obligatorias para los campos principales.
     if(!this.name || !this.n_document || !this.surname || !this.mobile){
       this.text_validation = "¡ALTO AHÍ! ASEGÚRATE DE COMPLETAR TU (NOMBRE,APELLIDO,°N DE DOCUMENTO,TELEFONO)";
       return;
@@ -81,7 +83,7 @@ export class AddPatientMComponent {
     }
  
     console.log(this.selectedValue);
-    
+    // Prepara un objeto FormData para enviar los datos al backend.
     let formData = new FormData();
     formData.append("name",this.name);
     formData.append("surname",this.surname);
@@ -93,7 +95,7 @@ export class AddPatientMComponent {
     if(this.birth_date){
       formData.append("birth_date",this.birth_date);
     }
-    formData.append("gender",this.gender+"");
+    formData.append("gender",this.gender+"");// Convierte a cadena para garantizar compatibilidad.
     if(this.education){
       formData.append("education",this.education);
     }
@@ -101,8 +103,9 @@ export class AddPatientMComponent {
       formData.append("address",this.address);
     }
     if(this.FILE_AVATAR){
-      formData.append("imagen",this.FILE_AVATAR);
+      formData.append("imagen",this.FILE_AVATAR);// Archivo de imagen del avatar.
     }
+     // Agrega los antecedentes y demás datos del acompañante y responsable.
     if(this.antecedent_family){
       formData.append("antecedent_family",this.antecedent_family);
     }
@@ -122,6 +125,7 @@ export class AddPatientMComponent {
     if(this.relationship_companion){
       formData.append("relationship_companion",this.relationship_companion);
     }
+    // Datos del responsable.
     if(this.name_responsible){
       formData.append("name_responsible",this.name_responsible);
     }
@@ -138,20 +142,24 @@ export class AddPatientMComponent {
       formData.append("current_disease",this.current_disease);
     }
 
+// Signos vitales.
     formData.append("ta",this.ta+"");
     formData.append("temperature",this.temperature+"");
     formData.append("fc",this.fc+"");
     formData.append("fr",this.fr+"");
     formData.append("peso",this.peso+"");
 
+// Llama al servicio para registrar al paciente.
     this.patientService.registerPatient(formData).subscribe((resp:any) => {
       console.log(resp);
       
       if(resp.message == 403){
         this.text_validation = resp.message_text;
       }else{
+        // Mensaje de éxito y reseteo de campos.
         this.text_success = 'EL PACIENTE SE HA REGISTRADO CON ÉXITO';
-        
+
+         // Resetea todos los campos del formulario.
         this.name = '';
         this.surname = '';
         this.email = '';
@@ -188,10 +196,11 @@ export class AddPatientMComponent {
     })
   }
 
-  // Manejar la carga de archivos y previsualizar la imagen
+  // Maneja la carga de archivos y previsualiza la imagen seleccionada.
   loadFile($event:any){
     if($event.target.files[0].type.indexOf("image") < 0){
       // alert("SOLAMENTE PUEDEN SER ARCHIVOS DE TIPO IMAGEN");
+       // Validación para asegurarse de que el archivo sea una imagen.
       this.text_validation = "SOLAMENTE PUEDEN SER ARCHIVOS DE TIPO IMAGEN";
       return;
     }
@@ -199,6 +208,7 @@ export class AddPatientMComponent {
     this.FILE_AVATAR = $event.target.files[0];
     let reader = new FileReader();
     reader.readAsDataURL(this.FILE_AVATAR);
+     // Previsualización de la imagen cargada.
     reader.onloadend = () => this.IMAGEN_PREVIZUALIZA = reader.result;
   }
 }
